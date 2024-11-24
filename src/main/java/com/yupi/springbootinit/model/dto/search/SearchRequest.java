@@ -14,5 +14,9 @@ import java.io.Serializable;
 public class SearchRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    // 不同的搜索类型，使用枚举类限制SearchTypeEnum
+    private String type;
+
+    // 搜索关键字
     private String searchText;
 }

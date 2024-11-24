@@ -2,11 +2,14 @@ package com.yupi.springbootinit.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yupi.springbootinit.common.BaseResponse;
+import com.yupi.springbootinit.common.ErrorCode;
 import com.yupi.springbootinit.common.ResultUtils;
+import com.yupi.springbootinit.exception.BusinessException;
 import com.yupi.springbootinit.model.dto.post.PostQueryRequest;
 import com.yupi.springbootinit.model.dto.search.SearchRequest;
 import com.yupi.springbootinit.model.dto.user.UserQueryRequest;
 import com.yupi.springbootinit.model.entity.Picture;
+import com.yupi.springbootinit.model.enums.SearchTypeEnum;
 import com.yupi.springbootinit.model.vo.PostVO;
 import com.yupi.springbootinit.model.vo.SearchVO;
 import com.yupi.springbootinit.model.vo.UserVO;
@@ -45,26 +48,56 @@ public class SearchController {
 
     @PostMapping("/all")
     public BaseResponse<SearchVO> searchAll(@RequestBody SearchRequest searchRequest, HttpServletRequest request){
+        String type = searchRequest.getType();
+        SearchTypeEnum searchTypeEnum = SearchTypeEnum.getEnumByValue(type);
         String searchText = searchRequest.getSearchText();
-        // 查用户
-        UserQueryRequest userQueryRequest = new UserQueryRequest();
-        userQueryRequest.setUserName(searchText);
-        Page<UserVO> userVOPage = userService.listUserVOByPage(userQueryRequest);
 
-        // 查帖子
-        PostQueryRequest postQueryRequest = new PostQueryRequest();
-        postQueryRequest.setSearchText(searchText);
-        Page<PostVO> postVOPage = postService.listPostVOByPage(postQueryRequest, request);
+        // type为空，查全部
+        if(searchTypeEnum == null){
+            // 查用户
+            UserQueryRequest userQueryRequest = new UserQueryRequest();
+            userQueryRequest.setUserName(searchText);
+            Page<UserVO> userVOPage = userService.listUserVOByPage(userQueryRequest);
 
-        // 查图片
-        Page<Picture> picturePage = pictureService.searchPictures(searchText, 1, 10);
+            // 查帖子
+            PostQueryRequest postQueryRequest = new PostQueryRequest();
+            postQueryRequest.setSearchText(searchText);
+            Page<PostVO> postVOPage = postService.listPostVOByPage(postQueryRequest, request);
 
-        // 聚合结果
-        SearchVO searchVO = new SearchVO();
-        searchVO.setUserList(userVOPage.getRecords());
-        searchVO.setPostList(postVOPage.getRecords());
-        searchVO.setPictureList(picturePage.getRecords());
+            // 查图片
+            Page<Picture> picturePage = pictureService.searchPictures(searchText, 1, 10);
 
-        return ResultUtils.success(searchVO);
+            // 聚合结果
+            SearchVO searchVO = new SearchVO();
+            searchVO.setUserList(userVOPage.getRecords());
+            searchVO.setPostList(postVOPage.getRecords());
+            searchVO.setPictureList(picturePage.getRecords());
+            return ResultUtils.success(searchVO);
+        }else{  // 不为空的话，依据type查对应的
+            SearchVO searchVO = new SearchVO();
+            switch(searchTypeEnum){
+                case POST:
+                    // 查帖子
+                    PostQueryRequest postQueryRequest = new PostQueryRequest();
+                    postQueryRequest.setSearchText(searchText);
+                    Page<PostVO> postVOPage = postService.listPostVOByPage(postQueryRequest, request);
+                    searchVO.setPostList(postVOPage.getRecords());
+                    break;
+                case USER:
+                    // 查用户
+                    UserQueryRequest userQueryRequest = new UserQueryRequest();
+                    userQueryRequest.setUserName(searchText);
+                    Page<UserVO> userVOPage = userService.listUserVOByPage(userQueryRequest);
+                    searchVO.setUserList(userVOPage.getRecords());
+                    break;
+                case PICTIRE:
+                    // 查图片
+                    Page<Picture> picturePage = pictureService.searchPictures(searchText, 1, 10);
+                    searchVO.setPictureList(picturePage.getRecords());
+                    break;
+                default:
+            }
+            return ResultUtils.success(searchVO);
+        }
     }
 }
