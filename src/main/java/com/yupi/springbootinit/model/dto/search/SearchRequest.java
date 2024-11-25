@@ -19,4 +19,8 @@ public class SearchRequest implements Serializable {
 
     // 搜索关键字
     private String searchText;
+
+    private long pageNum;
+
+    private long pageSize;
 }
